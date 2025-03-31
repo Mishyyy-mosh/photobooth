@@ -145,18 +145,17 @@
 
         function createPhotoStrip() {
     let stripCanvas = document.createElement('canvas');
-    stripCanvas.width = 480; // Fixed width
-    stripCanvas.height = 600; // Fixed height (same as single image)
+    stripCanvas.width = canvas.width; // Ensure same width as video
+    stripCanvas.height = canvas.height * maxPhotos; // Adjust height for multiple photos
     let stripContext = stripCanvas.getContext('2d');
-
-    let photoHeight = stripCanvas.height / maxPhotos; // Scale images
 
     images.forEach((imgSrc, index) => {
         let img = new Image();
         img.src = imgSrc;
         img.onload = () => {
-            stripContext.drawImage(img, 0, index * photoHeight, stripCanvas.width, photoHeight);
+            stripContext.drawImage(img, 0, index * canvas.height, canvas.width, canvas.height);
             if (index === images.length - 1) {
+                // Update main canvas to show the final photostrip
                 canvas.width = stripCanvas.width;
                 canvas.height = stripCanvas.height;
                 context.drawImage(stripCanvas, 0, 0);
