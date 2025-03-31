@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Photobooth 📸</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom right, #FFDEE9, #B5FFFC);
+            color: #444;
+        }
+        h1 {
+            font-size: 28px;
+            color: #FF4081;
+        }
+        video, canvas {
+            border: 5px solid white;
+            display: block;
+            margin: 10px auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+        }
+        #capture { background-color: #FF4081; }
+        #flip { background-color: #FFAB40; }
+        #download { background-color: #4CAF50; display: none; }
+        #retake { background-color: #757575; display: none; }
+        button:hover { opacity: 0.8; }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌸 Cute Photobooth 📷</h1>
+    
+    <video id="video" width="480" height="600" autoplay playsinline></video>
+    <canvas id="canvas" width="480" height="600" style="display: none;"></canvas>
+
+    <div class="controls">
+        <select id="photoMode">
+            <option value="single">📷 1 Image</option>
+            <option value="double">📷📷 2 Photos</option>
+            <option value="quad">📷📷📷📷 4 Photos</option>
+        </select>
+        <button id="capture">📸 Take Photo</button>
+        <button id="flip">🔄 Flip Camera</button>
+        <select id="filter">
+            <option value="none">No Filter</option>
+            <option value="grayscale(100%)">Grayscale</option>
+            <option value="sepia(100%)">Sepia</option>
+            <option value="invert(100%)">Invert</option>
+            <option value="blur(3px)">Blur</option>
+            <option value="brightness(120%)">Bright</option>
+            <option value="contrast(150%)">High Contrast</option>
+            <option value="saturate(200%)">Saturated</option>
+        </select>
+        <button id="download">💾 Download</button>
+        <button id="retake">🔄 Retake</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const downloadButton = document.getElementById('download');
+        const retakeButton = document.getElementById('retake');
+        const flipButton = document.getElementById('flip');
+        const filterSelect = document.getElementById('filter');
+        const photoModeSelect = document.getElementById('photoMode');
+        const context = canvas.getContext('2d');
+        let stream;
+        let currentFacingMode = 'user';
+        let photoCount = 0;
+        let maxPhotos = 1;
+        let images = [];
+
+        async function startCamera(facingMode = 'user') {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode }
+                });
+                video.srcObject = stream;
+                video.style.transform = "scaleX(-1)"; // Mirror effect
+            } catch (error) {
+                console.error("Camera error:", error);
+                alert("Camera access is blocked or not supported!");
+            }
+        }
+
+        captureButton.addEventListener('click', () => {
+            const mode = photoModeSelect.value;
+            if (mode === "single") maxPhotos = 1;
+            if (mode === "double") maxPhotos = 2;
+            if (mode === "quad") maxPhotos = 4;
+
+            if (photoCount < maxPhotos) {
+                canvas.style.display = 'block';
+                video.style.display = 'none';
+
+                // Apply mirroring
+                context.save();
+                context.filter = filterSelect.value;
+                context.scale(-1, 1);
+                context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+                context.restore();
+
+                images.push(canvas.toDataURL('image/png'));
+                photoCount++;
+
+                if (photoCount < maxPhotos) {
+                    setTimeout(() => {
+                        video.style.display = 'block';
+                        canvas.style.display = 'none';
+                        alert(`Take photo ${photoCount + 1}/${maxPhotos}`);
+                    }, 1000);
+                } else {
+                    createPhotoStrip();
+                    captureButton.style.display = 'none';
+                    flipButton.style.display = 'none';
+                    downloadButton.style.display = 'inline-block';
+                    retakeButton.style.display = 'inline-block';
+                }
+            }
+        });
+
+        function createPhotoStrip() {
+            let stripHeight = canvas.height * maxPhotos;
+            let stripCanvas = document.createElement('canvas');
+            stripCanvas.width = canvas.width;
+            stripCanvas.height = stripHeight;
+            let stripContext = stripCanvas.getContext('2d');
+
+            images.forEach((imgSrc, index) => {
+                let img = new Image();
+                img.src = imgSrc;
+                img.onload = () => {
+                    stripContext.drawImage(img, 0, index * canvas.height, canvas.width, canvas.height);
+                    if (index === images.length - 1) {
+                        canvas.width = stripCanvas.width;
+                        canvas.height = stripCanvas.height;
+                        context.drawImage(stripCanvas, 0, 0);
+                    }
+                };
+            });
+        }
+
+        retakeButton.addEventListener('click', () => {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            captureButton.style.display = 'inline-block';
+            flipButton.style.display = 'inline-block';
+            downloadButton.style.display = 'none';
+            retakeButton.style.display = 'none';
+            photoCount = 0;
+            images = [];
+        });
+
+        flipButton.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            startCamera(currentFacingMode);
+        });
+
+        filterSelect.addEventListener('change', () => {
+            video.style.filter = filterSelect.value;
+        });
+
+        downloadButton.addEventListener('click', () => {
+    const image = canvas.toDataURL('image/png');
+
+    // Create a download link
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = 'photobooth_strip.png';
+
+    // Check if the browser supports direct downloading
+    if (typeof link.download !== 'undefined') {
+        // Works on Android (Chrome, Edge, Samsung Internet)
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        // iOS workaround (open in new tab)
+        const newTab = window.open();
+        newTab.document.write(`<img src="${image}" style="width:100%;"/>`);
+    }
+});
+
+        startCamera();
+    </script>
+</body>
+</html>
