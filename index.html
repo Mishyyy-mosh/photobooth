@@ -16,10 +16,10 @@
             color: #FF4081;
         }
         video, canvas {
-            border: 4px solid white;
+            border: 5px solid white;
             display: block;
-            margin: 9px auto;
-            border-radius: 9px;
+            margin: 10px auto;
+            border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
         .controls {
@@ -106,44 +106,47 @@
                 alert("Camera access is blocked or not supported!");
             }
         }
-
         captureButton.addEventListener('click', () => {
-            const mode = photoModeSelect.value;
-            if (mode === "single") maxPhotos = 1;
-            if (mode === "double") maxPhotos = 2;
-            if (mode === "quad") maxPhotos = 4;
+    const mode = photoModeSelect.value;
+    if (mode === "single") maxPhotos = 1;
+    if (mode === "double") maxPhotos = 2;
+    if (mode === "quad") maxPhotos = 4;
 
-            if (photoCount < maxPhotos) {
-                canvas.style.display = 'block';
-                video.style.display = 'none';
+    // 🚀 Ensure the canvas matches the actual DISPLAY size of the video
+    canvas.width = video.clientWidth;  // Instead of video.videoWidth
+    canvas.height = video.clientHeight; // Instead of video.videoHeight
 
-                // Apply mirroring
-                context.save();
-                context.filter = filterSelect.value;
-                context.scale(-1, 1);
-                context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-                context.restore();
+    if (photoCount < maxPhotos) {
+        canvas.style.display = 'block';
+        video.style.display = 'none';
 
-                images.push(canvas.toDataURL('image/png'));
-                photoCount++;
+        // 🪞 Apply mirroring effect & draw image exactly as displayed
+        context.save();
+        context.filter = filterSelect.value;
+        context.scale(-1, 1);
+        context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+        context.restore();
 
-                if (photoCount < maxPhotos) {
-                    setTimeout(() => {
-                        video.style.display = 'block';
-                        canvas.style.display = 'none';
-                        alert(`Take photo ${photoCount + 1}/${maxPhotos}`);
-                    }, 1000);
-                } else {
-                    createPhotoStrip();
-                    captureButton.style.display = 'none';
-                    flipButton.style.display = 'none';
-                    downloadButton.style.display = 'inline-block';
-                    retakeButton.style.display = 'inline-block';
-                }
-            }
-        });
+        images.push(canvas.toDataURL('image/png'));
+        photoCount++;
 
-        function createPhotoStrip() {
+        if (photoCount < maxPhotos) {
+            setTimeout(() => {
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+                alert(`Take photo ${photoCount + 1}/${maxPhotos}`);
+            }, 1000);
+        } else {
+            createPhotoStrip();
+            captureButton.style.display = 'none';
+            flipButton.style.display = 'none';
+            downloadButton.style.display = 'inline-block';
+            retakeButton.style.display = 'inline-block';
+        }
+    }
+});
+
+      function createPhotoStrip() {
     let stripCanvas = document.createElement('canvas');
     stripCanvas.width = canvas.width; // Ensure same width as video
     stripCanvas.height = canvas.height * maxPhotos; // Adjust height for multiple photos
