@@ -91,4 +91,112 @@
             <option value="flower">🌸 Flower</option>
             <option value="glasses">🕶️ Cool Glasses</option>
         </select>
-        <
+        <button id="download" style="display: none;">💾 Download</button>
+        <button id="retake" style="display: none;">🔄 Retake</button>
+    </div>
+
+    <div class="flash"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const downloadButton = document.getElementById('download');
+        const retakeButton = document.getElementById('retake');
+        const flipButton = document.getElementById('flip');
+        const filterSelect = document.getElementById('filter');
+        const photoModeSelect = document.getElementById('photoMode');
+        const stickerSelect = document.getElementById('stickerSelect');
+        const context = canvas.getContext('2d');
+        let stream;
+        let currentFacingMode = 'user';
+        let stickers = [];
+
+        async function startCamera(facingMode = 'user') {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("Camera error:", error);
+                alert("Camera access is blocked or not supported!");
+            }
+        }
+
+        function triggerFlash() {
+            const flash = document.querySelector('.flash');
+            flash.style.opacity = '1';
+            setTimeout(() => flash.style.opacity = '0', 100);
+        }
+
+        captureButton.addEventListener('click', () => {
+            triggerFlash();
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            context.filter = filterSelect.value;
+
+            const mode = parseInt(photoModeSelect.value);
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (mode === 1) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            } else {
+                for (let i = 0; i < mode; i++) {
+                    context.drawImage(video, 0, i * (canvas.height / mode), canvas.width, canvas.height / mode);
+                }
+            }
+
+            captureButton.style.display = 'none';
+            flipButton.style.display = 'none';
+            downloadButton.style.display = 'inline-block';
+            retakeButton.style.display = 'inline-block';
+
+            addSticker();
+        });
+
+        function addSticker() {
+            let sticker = document.createElement('img');
+            sticker.classList.add('sticker');
+
+            let selectedSticker = stickerSelect.value;
+            if (selectedSticker === "heart") {
+                sticker.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Emoji_u2764.svg/512px-Emoji_u2764.svg.png";
+            } else if (selectedSticker === "star") {
+                sticker.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Full_Star_Yellow.svg/512px-Full_Star_Yellow.svg.png";
+            } else if (selectedSticker === "flower") {
+                sticker.src = "https://upload.wikimedia.org/wikipedia/commons/4/40/Noun_Project_flower_icon_970486.svg";
+            } else if (selectedSticker === "glasses") {
+                sticker.src = "https://upload.wikimedia.org/wikipedia/commons/e/e2/Sunglasses.png";
+            } else {
+                return;
+            }
+
+            sticker.style.left = `${Math.random() * 300}px`;
+            sticker.style.top = `${Math.random() * 400}px`;
+            sticker.draggable = true;
+            document.body.appendChild(sticker);
+            stickers.push(sticker);
+        }
+
+        retakeButton.addEventListener('click', () => {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            captureButton.style.display = 'inline-block';
+            flipButton.style.display = 'inline-block';
+            downloadButton.style.display = 'none';
+            retakeButton.style.display = 'none';
+            stickers.forEach(sticker => sticker.remove());
+            stickers = [];
+        });
+
+        flipButton.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            startCamera(currentFacingMode);
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
