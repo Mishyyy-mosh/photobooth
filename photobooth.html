@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Photobooth 📸</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom right, #FFDEE9, #B5FFFC);
+            color: #444;
+        }
+        h1 {
+            font-size: 28px;
+            color: #FF4081;
+        }
+        video, canvas {
+            border: 5px solid white;
+            display: block;
+            margin: 10px auto;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+        }
+        #capture { background-color: #FF4081; }
+        #flip { background-color: #FFAB40; }
+        #download { background-color: #4CAF50; }
+        #retake { background-color: #757575; }
+        .filter-btn { background-color: #03A9F4; }
+        button:hover { opacity: 0.8; }
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌸 Cute Photobooth 📷</h1>
+    <video id="video" width="400" height="300" autoplay></video>
+    <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+
+    <div class="controls">
+        <button id="capture">📸 Take Photo</button>
+        <button id="flip">🔄 Flip Camera</button>
+        <select id="filter">
+            <option value="none">No Filter</option>
+            <option value="grayscale(100%)">Grayscale</option>
+            <option value="sepia(100%)">Sepia</option>
+            <option value="invert(100%)">Invert</option>
+            <option value="blur(3px)">Blur</option>
+        </select>
+        <button id="download" style="display: none;">💾 Download</button>
+        <button id="retake" style="display: none;">🔄 Retake</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const downloadButton = document.getElementById('download');
+        const retakeButton = document.getElementById('retake');
+        const flipButton = document.getElementById('flip');
+        const filterSelect = document.getElementById('filter');
+        const context = canvas.getContext('2d');
+        let stream;
+        let currentFacingMode = 'user'; // Default to front camera
+
+        async function startCamera(facingMode = 'user') {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop()); // Stop previous stream
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode } });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("Camera error:", error);
+                alert("Camera access is blocked or not supported!");
+            }
+        }
+
+        captureButton.addEventListener('click', () => {
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            context.filter = filterSelect.value; 
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            captureButton.style.display = 'none';
+            flipButton.style.display = 'none';
+            downloadButton.style.display = 'inline-block';
+            retakeButton.style.display = 'inline-block';
+        });
+
+        retakeButton.addEventListener('click', () => {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            captureButton.style.display = 'inline-block';
+            flipButton.style.display = 'inline-block';
+            downloadButton.style.display = 'none';
+            retakeButton.style.display = 'none';
+        });
+
+        flipButton.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            startCamera(currentFacingMode);
+        });
+
+        filterSelect.addEventListener('change', () => {
+            video.style.filter = filterSelect.value;
+        });
+
+        downloadButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'cute_photo.png';
+            link.click();
+        });
+
+        startCamera();
+    </script>
+</body>
+</html>
