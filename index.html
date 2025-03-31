@@ -106,27 +106,30 @@
                 alert("Camera access is blocked or not supported!");
             }
         }
+
         captureButton.addEventListener('click', () => {
     const mode = photoModeSelect.value;
     if (mode === "single") maxPhotos = 1;
     if (mode === "double") maxPhotos = 2;
     if (mode === "quad") maxPhotos = 4;
 
-    // 🚀 Ensure the canvas matches the actual DISPLAY size of the video
-    canvas.width = video.clientWidth;  // Instead of video.videoWidth
-    canvas.height = video.clientHeight; // Instead of video.videoHeight
-
     if (photoCount < maxPhotos) {
+        // Ensure the canvas size matches the video size
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Show the canvas, hide video
         canvas.style.display = 'block';
         video.style.display = 'none';
 
-        // 🪞 Apply mirroring effect & draw image exactly as displayed
+        // Draw mirrored video frame onto canvas
         context.save();
         context.filter = filterSelect.value;
         context.scale(-1, 1);
         context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
         context.restore();
 
+        // Store the captured image
         images.push(canvas.toDataURL('image/png'));
         photoCount++;
 
@@ -146,26 +149,37 @@
     }
 });
 
-      function createPhotoStrip() {
+function createPhotoStrip() {
     let stripCanvas = document.createElement('canvas');
-    stripCanvas.width = canvas.width; // Ensure same width as video
-    stripCanvas.height = canvas.height * maxPhotos; // Adjust height for multiple photos
+    
+    // Ensure stripCanvas matches the video size
+    stripCanvas.width = video.videoWidth;
+    stripCanvas.height = video.videoHeight * maxPhotos;
+
     let stripContext = stripCanvas.getContext('2d');
+
+    let imagesLoaded = 0; // Track image loading
 
     images.forEach((imgSrc, index) => {
         let img = new Image();
         img.src = imgSrc;
+
         img.onload = () => {
-            stripContext.drawImage(img, 0, index * canvas.height, canvas.width, canvas.height);
-            if (index === images.length - 1) {
-                // Update main canvas to show the final photostrip
+            stripContext.drawImage(img, 0, index * video.videoHeight, video.videoWidth, video.videoHeight);
+
+            imagesLoaded++;
+            if (imagesLoaded === images.length) {
+                // Update main canvas with final photostrip
                 canvas.width = stripCanvas.width;
                 canvas.height = stripCanvas.height;
                 context.drawImage(stripCanvas, 0, 0);
             }
         };
+
+        img.onerror = () => console.error("Image failed to load.");
     });
 }
+
 
         retakeButton.addEventListener('click', () => {
             canvas.style.display = 'none';
