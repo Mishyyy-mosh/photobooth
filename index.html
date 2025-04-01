@@ -63,13 +63,26 @@
         <button id="flip">🔄 Flip Camera</button>
         <select id="filter">
             <option value="none">No Filter</option>
-            <option value="grayscale(100%)">Grayscale</option>
+            <option value="grayscale(100%)">Black & White</option>
             <option value="sepia(100%)">Sepia</option>
-            <option value="invert(100%)">Invert</option>
-            <option value="blur(3px)">Blur</option>
-            <option value="brightness(120%)">Bright</option>
-            <option value="contrast(150%)">High Contrast</option>
-            <option value="saturate(200%)">Saturated</option>
+            <option value="contrast(120%) brightness(80%)">Vignette</option>
+            <option value="sepia(50%) saturate(120%)">Warm Tone</option>
+            <option value="hue-rotate(200deg) saturate(120%)">Cool Tone</option>
+            <option value="blur(2px) brightness(110%)">Soft Glow</option>
+            <option value="contrast(90%) brightness(90%)">Grainy Film</option>
+            <option value="contrast(130%) brightness(110%)">HDR</option>
+            <option value="sepia(40%) contrast(90%) brightness(80%)">Vintage</option>
+            <option value="contrast(80%) brightness(90%) saturate(80%)">Matte</option>
+            <option value="contrast(150%) saturate(200%) brightness(110%)">Neon Glow</option>
+            <option value="contrast(120%) saturate(180%) brightness(90%)">Lomo</option>
+            <option value="invert(100%) grayscale(100%)">Cartoon/Sketch</option>
+            <option value="contrast(120%) brightness(120%) saturate(80%)">Pixelated</option>
+            <option value="grayscale(50%) contrast(150%)">Duo Tone</option>
+            <option value="blur(5px) brightness(120%)">Bokeh Blur</option>
+            <option value="contrast(150%) brightness(80%) hue-rotate(180deg)">Infrared</option>
+            <option value="contrast(120%) brightness(90%) hue-rotate(-30deg)">Cinematic Teal & Orange</option>
+          
+        </select>
         </select>
         <button id="download">💾 Download</button>
         <button id="retake">🔄 Retake</button>
@@ -107,47 +120,119 @@
             }
         }
 
-        captureButton.addEventListener('click', () => {
-    const mode = photoModeSelect.value;
-    if (mode === "single") maxPhotos = 1;
-    if (mode === "double") maxPhotos = 2;
-    if (mode === "quad") maxPhotos = 4;
+			captureButton.addEventListener("click", () => {
+					const mode = photoModeSelect.value;
+					if (mode === "single") maxPhotos = 1;
+					if (mode === "double") maxPhotos = 2;
+					if (mode === "quad") maxPhotos = 4;
 
-    if (photoCount < maxPhotos) {
-        // Ensure the canvas size matches the video size
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Show the canvas, hide video
-        canvas.style.display = 'block';
-        video.style.display = 'none';
+					if (photoCount < maxPhotos) {
+							// Ensure the canvas matches the video dimensions
+							canvas.width = video.videoWidth;
+							canvas.height = video.videoHeight;
 
-        // Draw mirrored video frame onto canvas
-        context.save();
-        context.filter = filterSelect.value;
-        context.scale(-1, 1);
-        context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-        context.restore();
+							// Show canvas, hide video
+							canvas.style.display = "block";
+							video.style.display = "none";
 
-        // Store the captured image
-        images.push(canvas.toDataURL('image/png'));
-        photoCount++;
+							// Apply the filter to the canvas
+							context.save();
+							context.filter = filterSelect.value; // Apply filter directly to the canvas
+							context.scale(-1, 1); // Mirror effect
+							context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+							context.restore();
 
-        if (photoCount < maxPhotos) {
-            setTimeout(() => {
-                video.style.display = 'block';
-                canvas.style.display = 'none';
-                alert(`Take photo ${photoCount + 1}/${maxPhotos}`);
-            }, 1000);
+							// Store captured image
+							images.push(canvas.toDataURL("image/png"));
+							photoCount++;
+
+							if (photoCount < maxPhotos) {
+									setTimeout(() => {
+											video.style.display = "block";
+											canvas.style.display = "none";
+											alert(`Take photo ${photoCount + 1}/${maxPhotos}`);
+									}, 1000);
+							} else {
+									createPhotoStrip();
+									captureButton.style.display = "none";
+									flipButton.style.display = "none";
+									downloadButton.style.display = "inline-block";
+									retakeButton.style.display = "inline-block";
+							}
+					}
+			});
+
+			function applyFilterManually(canvas, filter) {
+					let ctx = canvas.getContext("2d");
+					let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+					let pixels = imageData.data;
+
+					switch (filter) {
+							case "grayscale(100%)": // Black & White
+									for (let i = 0; i < pixels.length; i += 4) {
+											let avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+											pixels[i] = avg; // Red
+											pixels[i + 1] = avg; // Green
+											pixels[i + 2] = avg; // Blue
+									}
+									break;
+							case "sepia(100%)": // Sepia
+									for (let i = 0; i < pixels.length; i += 4) {
+											let r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+											pixels[i] = r * 0.393 + g * 0.769 + b * 0.189;
+											pixels[i + 1] = r * 0.349 + g * 0.686 + b * 0.168;
+											pixels[i + 2] = r * 0.272 + g * 0.534 + b * 0.131;
+									}
+									break;
+							case "invert(100%)": // Invert
+									for (let i = 0; i < pixels.length; i += 4) {
+											pixels[i] = 255 - pixels[i]; // Red
+											pixels[i + 1] = 255 - pixels[i + 1]; // Green
+											pixels[i + 2] = 255 - pixels[i + 2]; // Blue
+									}
+									break;
+							// Add more filter cases here if needed
+					}
+
+					ctx.putImageData(imageData, 0, 0);
+			}
+			
+function applyCartoonEffect() {
+    let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    let pixels = imageData.data;
+
+    for (let i = 0; i < pixels.length; i += 4) {
+        let avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+        if (avg > 128) {
+            pixels[i] = pixels[i + 1] = pixels[i + 2] = 255; // White
         } else {
-            createPhotoStrip();
-            captureButton.style.display = 'none';
-            flipButton.style.display = 'none';
-            downloadButton.style.display = 'inline-block';
-            retakeButton.style.display = 'inline-block';
+            pixels[i] = pixels[i + 1] = pixels[i + 2] = 0; // Black
         }
     }
-});
+
+    context.putImageData(imageData, 0, 0);
+}
+
+function applyPixelation(pixelSize = 10) {
+    let tempCanvas = document.createElement("canvas");
+    let tempContext = tempCanvas.getContext("2d");
+
+    tempCanvas.width = canvas.width / pixelSize;
+    tempCanvas.height = canvas.height / pixelSize;
+
+    // Scale down the image
+    tempContext.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Scale it back up
+    context.imageSmoothingEnabled = false;
+    context.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+}
+
+function applyBokehBlur() {
+    context.filter = "blur(5px)";
+    context.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+}
+
 
 function createPhotoStrip() {
     let stripCanvas = document.createElement('canvas');
